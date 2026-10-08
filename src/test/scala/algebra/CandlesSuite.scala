@@ -10,6 +10,14 @@ class CandlesSuite extends munit.FunSuite:
       assertEquals((a |+| b) |+| c, a |+| (b |+| c))
       assertEquals(a |+| b, b |+| a)
 
+  test("同一毫秒的多笔成交：结合律和交换律仍然成立"):
+    val same = List(Tick(1000, 10.0, 1), Tick(1000, 12.0, 2), Tick(1000, 11.0, 3), Tick(999, 9.0, 1), Tick(1001, 9.5, 1)).map(Bar.of)
+    for a <- same; b <- same; c <- same do
+      assertEquals((a |+| b) |+| c, a |+| (b |+| c))
+      assertEquals(a |+| b, b |+| a)
+    for perm <- same.take(3).permutations do
+      assertEquals(perm.reduce(_ |+| _), same.take(3).reduce(_ |+| _))
+
   test("Option[Bar] 是幺半群：None 是单位元"):
     val b = Option(bars.head)
     assertEquals(b |+| None, b)

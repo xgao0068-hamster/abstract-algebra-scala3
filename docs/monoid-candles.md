@@ -19,8 +19,8 @@ final case class Bar(openTime, open, high, low, closeTime, close, volume, notion
 
 | 字段 | 合并方式 | 代数结构 |
 |---|---|---|
-| open | 时间最早的那个（并列取左） | 带偏向的 min |
-| close | 时间最晚的那个（并列取右） | 带偏向的 max |
+| open | (时间, 价格) 字典序最小的那笔 | 全序上的 min |
+| close | (时间, 价格) 字典序最大的那笔 | 全序上的 max |
 | high / low | max / min | 半格 |
 | volume / notional | + | 交换幺半群 |
 
@@ -35,6 +35,8 @@ given [A: Semigroup]: Monoid[Option[A]]  // None 就是 empty
 这是一个通用构造：任何半群补上一个新元素当单位元就变成幺半群。
 
 open/close 看的是时间戳而不是位置，所以 K 线合并还满足**交换律**：乱序到达的 tick 聚合结果一样（测试 `乱序到达的 tick 聚合结果相同`）。分布式系统里消息乱序是常态，交换律让你不用先排序。
+
+注意同一毫秒里可能有多笔成交。如果只按时间比较、并列时“取左边”，那么交换两笔同时间的成交会改变 open，交换律就不成立了。所以比较键是 (时间, 价格)：用价格打破平局是任意的，但它确定、与顺序无关。真实系统里用交易所的成交序号当第二键更合适（练习 1）。
 
 ## 2. 分桶：Map 也是幺半群
 
@@ -99,7 +101,7 @@ scala> Monoid.combineAll(ticks.map(t => Stats.of(t.price))).stddev
 
 ## 练习
 
-1. 给 `Bar` 加一个成交笔数 `trades: Long` 字段，确认定律测试仍然通过。
+1. 给 `Tick` 加一个成交序号 `seq: Long`，用 (时间, 序号) 代替 (时间, 价格) 打破平局；再给 `Bar` 加一个成交笔数 `trades: Long` 字段，确认定律测试仍然通过。
 2. 写一个 `Monoid[TopK]`，维护成交量最大的 k 笔 tick。它满足交换律吗？
 3. 用 `SlidingWindow` 和 `Stats` 实现 20 根 K 线的滚动波动率，与朴素重算对比。
 4. 布林带需要滚动均值和标准差，用本章的东西组合出来。

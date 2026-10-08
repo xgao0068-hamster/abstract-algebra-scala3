@@ -29,15 +29,21 @@ object Bar:
   /** K 线是半群但不是幺半群：没有一根“空 K 线”能当单位元（open 填什么都不对）。
     * 需要单位元时用 Option[Bar]，见 Algebra.scala 里的 Monoid[Option[A]]。
     *
-    * 结合律的关键：open 取时间最早的（并列时取左边），close 取时间最晚的（并列时取右边），
-    * “带偏向的 min/max” 都满足结合律。high/low 是 max/min，volume/notional 是加法。
-    * 因为 open/close 看时间戳而不是看位置，乱序到达的数据合并结果也一样（交换律也成立）。
+    * open 取 (时间, 价格) 字典序最小的那一笔，close 取字典序最大的那一笔。
+    * 字典序是全序，全序上的 min/max 既结合又交换；high/low 是 max/min，volume/notional 是加法。
+    * 所以乱序到达的数据合并结果也一样。
+    *
+    * 为什么要把价格也放进比较键？同一毫秒里常有多笔成交，只比时间的话，
+    * 并列时“取左边/取右边”就依赖到达顺序，交换律会被破坏。用价格打破平局是任意的，
+    * 但它是确定的；真实行情里应该用交易所给的成交序号（trade id）当第二键。
     */
   given Semigroup[Bar] with
     extension (x: Bar)
       def |+|(y: Bar): Bar =
-        val first = if y.openTime < x.openTime then y else x
-        val last = if y.closeTime >= x.closeTime then y else x
+        val yFirst = y.openTime < x.openTime || (y.openTime == x.openTime && y.open < x.open)
+        val yLast = y.closeTime > x.closeTime || (y.closeTime == x.closeTime && y.close > x.close)
+        val first = if yFirst then y else x
+        val last = if yLast then y else x
         Bar(
           first.openTime,
           first.open,
