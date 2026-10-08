@@ -32,3 +32,18 @@ given Monoid[String] with
 given [A]: Monoid[List[A]] with
   def empty: List[A] = Nil
   extension (x: List[A]) def |+|(y: List[A]): List[A] = x ++ y
+
+/** 给半群补一个单位元：None 就是 empty。 只有半群的东西（例如一根 K 线，没有“空 K 线”）也能折叠了。 */
+given [A: Semigroup]: Monoid[Option[A]] with
+  def empty: Option[A] = None
+  extension (x: Option[A])
+    def |+|(y: Option[A]): Option[A] = (x, y) match
+      case (Some(a), Some(b)) => Some(a |+| b)
+      case _                  => x.orElse(y)
+
+/** 按键合并：同一个键上的值用 V 的半群合并。分桶聚合、跨机器汇总都靠它。 */
+given [K, V: Semigroup]: Monoid[Map[K, V]] with
+  def empty: Map[K, V] = Map.empty
+  extension (x: Map[K, V])
+    def |+|(y: Map[K, V]): Map[K, V] =
+      y.foldLeft(x) { case (acc, (k, v)) => acc.updated(k, acc.get(k).fold(v)(_ |+| v)) }

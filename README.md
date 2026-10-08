@@ -18,6 +18,13 @@
 
 每个主题都会配有可运行的 Scala 3 代码和用来检验代数定律的测试。
 
+## 应用章节
+
+| 章节 | 代数结构 | 应用 |
+|---|---|---|
+| [半环 → 套利检测](docs/semiring-arbitrage.md) | 半环、矩阵闭包、半环同态 | 最短路 / 可达性 / 瓶颈路径；汇率图上的三角套利（负权环） |
+| [Monoid → K 线聚合](docs/monoid-candles.md) | 半群、幺半群、积与 Option/Map 构造 | OHLCV、VWAP、并行方差、重采样、滑动窗口 |
+
 ## 快速开始
 
 需要 JDK 17+ 和 [sbt](https://www.scala-sbt.org/)。
@@ -33,4 +40,5 @@ sbt console  # 打开 REPL 交互式探索
 ```
 src/main/scala/algebra/   代数结构定义与示例
 src/test/scala/algebra/   定律测试
+docs/                     各章节讲义与练习
 ```
